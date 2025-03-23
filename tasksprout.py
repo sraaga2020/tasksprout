@@ -144,9 +144,9 @@ def shop(user_points, plant_health, plant_species):
     st.header("Buy items with your " + str(user_points) + " productivity points to help your fruit grow. 📈")
     for i in range(len(shop_items["items"])):
         st.markdown(
-            f"**Item #{i+1}**: {shop_items['items'][i]}.Cost: {shop_items['costs'][i]}. Benefits: +{shop_items['health_points'][i]} plant health points."
+            f"**Item #{i+1}**: {shop_items['items'][i]}. Cost: {shop_items['costs'][i]} productivity points. Benefits: +{shop_items['health_points'][i]} plant health points."
         )
-    st.header("Checkout ")    
+    st.header("Checkout 💳")    
     item_index = st.text_input("What item number would you like to buy for your plant? ")
     if item_index:
         item_index = int(item_index)-1
