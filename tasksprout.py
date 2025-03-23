@@ -147,14 +147,16 @@ def shop(user_points, plant_health, plant_species, tasks_completed):
             f"**Item #{i+1}**: {shop_items['items'][i]}.Cost: {shop_items['costs'][i]}. Benefits: +{shop_items['health_points'][i]} plant health points."
         )
     st.header("Checkout ")    
-    item_index = int(st.text_input("What item number would you like to buy for your plant? "))-1
-    item_cost = shop_items["costs"][item_index]
-    if item_cost <= user_points:
-        user_points -= item_cost
-        plant_health += shop_items["health_points"][item_index]
-        plant_status = determine_plant_status(plant_health)
-        st.header("Purchase complete 💰! Your " + plant_species + " has grown to a " + plant_status + " ! ❤️")
-        st.title("Good work today! See you next time. 👋")
+    item_index = st.text_input("What item number would you like to buy for your plant? ")
+    if item_index:
+        item_index = int(item_index)-1
+        item_cost = shop_items["costs"][item_index]
+        if item_cost <= user_points:
+            user_points -= item_cost
+            plant_health += shop_items["health_points"][item_index]
+            plant_status = determine_plant_status(plant_health)
+            st.header("Purchase complete 💰! Your " + plant_species + " has grown to a " + plant_status + " ! ❤️")
+            st.title("Good work today! See you next time. 👋")
     return plant_health, user_points
 
 to_do, plant_health, plant_species = welcome()
