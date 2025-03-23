@@ -28,7 +28,7 @@ def welcome():
         'Choose a fruit to grow with your productivity!',
         ('','Watermelon 🍉', 'Strawberry 🍓', 'Tomato 🍅'))
     if plant_species != "":
-        st.write("Awesome choice! Let's get productive to grow your plant!")
+        st.write("Awesome choice! Let's get productive to grow your plant! 🔥")
         num_tasks_str = st.text_input("How many tasks do you have today? ✍️", key="num_tasks_input")
     
     if num_tasks_str.isdigit():
@@ -140,7 +140,7 @@ def points_and_task_completion(task_list):
 def shop(user_points, plant_health, plant_species):
     plant_status = determine_plant_status(plant_health)
     shop_items = {"items":["premium fertilizer", "normal fertilizer", "sun lamp", "growth potion", "water", "pruning tools", "a little love"], "costs":[50, 25, 50, 150, 20, 25, 3], "health_points": [20, 10, 20, 60, 8, 10, 1]}
-    st.title("Productivity Shop")
+    st.title("Productivity Shop 🛒")
     st.header("Buy items with your " + str(user_points) + " productivity points to help your fruit grow. 📈")
     for i in range(len(shop_items["items"])):
         st.markdown(
