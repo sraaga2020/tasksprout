@@ -2,6 +2,37 @@ import time
 import streamlit as st
 
 user_points = 0
+import requests
+# Hugging Face API setup
+HF_API_KEY = "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"
+API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.1"
+headers = {"Authorization": f"Bearer {HF_API_KEY}"}
+
+def query_huggingface(prompt):
+    response = requests.post(API_URL, headers=headers, json={"inputs": prompt})
+
+    if response.status_code == 200:
+        result = response.json()
+
+        if isinstance(result, list) and "generated_text" in result[0]:
+            full_output = result[0]["generated_text"].strip()
+
+            # Remove prompt echo from beginning if it exists
+            if full_output.startswith(prompt):
+                return full_output[len(prompt):].strip()
+            return full_output
+
+        elif isinstance(result, dict) and "generated_text" in result:
+            return result["generated_text"].strip()
+
+        else:
+            return "🤖 (AI did not return a readable response.)"
+
+    else:
+        return f"❌ AI Error: {response.status_code}"
+
+
+
 
 
 def determine_plant_status(plant_health):
@@ -28,7 +59,7 @@ def welcome():
         'Choose a fruit to grow with your productivity!',
         ('','Watermelon 🍉', 'Strawberry 🍓', 'Tomato 🍅'))
     if plant_species != "":
-        st.write("Awesome choice! Let's get productive to grow your plant! 🔥")
+        st.write("Awesome choice! Let's get productive to grow your plant!")
         num_tasks_str = st.text_input("How many tasks do you have today? ✍️", key="num_tasks_input")
     
     if num_tasks_str.isdigit():
@@ -74,6 +105,7 @@ def do_tasks(to_do):
     return points_earned, tasks_completed, minutes_worked
 
 
+    
 def points_and_task_completion(task_list):
     for key, default in {
         "task_index": 0,
@@ -98,14 +130,22 @@ def points_and_task_completion(task_list):
     finished = None
 
     if st.button("GO!", key=f"go_{i}"):
+        ai_message = query_huggingface("Give a few short bullet points tips to help a student complete the task: " + task_name)
+        st.info("Here's a little AI 🤖 help for this task: " + ai_message)
         countdown(task_time * 1)
         st.session_state[f"show_finished_{i}"] = True
+
 
     if st.session_state.get(f"show_finished_{i}", False):
         finished = st.text_input("Are you finished with your task? (yes/no)", key=f"finished_{i}").strip().lower()
 
     if finished == "no" and not st.session_state.waiting_extra:
         st.write("That's fine. Take some more time.")
+        if st.button("Get AI help.", key=f"end_{i}"):
+            ai_message = query_huggingface("A student is struggling on this task and is taking a lot of time. Give a few short bullet point tips to help the student on this task: " + task_name)
+            st.info("Here's a few tips to get you through: " + ai_message)
+            countdown(task_time * 1)
+            st.session_state[f"show_finished_{i}"] = True
         if st.button("Continue task", key=f"continue_{i}"):
             countdown(task_time * 1)
             st.session_state.waiting_extra = True
@@ -140,13 +180,13 @@ def points_and_task_completion(task_list):
 def shop(user_points, plant_health, plant_species):
     plant_status = determine_plant_status(plant_health)
     shop_items = {"items":["premium fertilizer", "normal fertilizer", "sun lamp", "growth potion", "water", "pruning tools", "a little love"], "costs":[50, 25, 50, 150, 20, 25, 3], "health_points": [20, 10, 20, 60, 8, 10, 1]}
-    st.title("Productivity Shop 🛒")
+    st.title("Productivity Shop")
     st.header("Buy items with your " + str(user_points) + " productivity points to help your fruit grow. 📈")
     for i in range(len(shop_items["items"])):
         st.markdown(
-            f"**Item #{i+1}**: {shop_items['items'][i]}. Cost: {shop_items['costs'][i]} productivity points. Benefits: +{shop_items['health_points'][i]} plant health points."
+            f"**Item #{i+1}**: {shop_items['items'][i]}.Cost: {shop_items['costs'][i]}. Benefits: +{shop_items['health_points'][i]} plant health points."
         )
-    st.header("Checkout 💳")    
+    st.header("Checkout ")    
     item_index = st.text_input("What item number would you like to buy for your plant? ")
     if item_index:
         item_index = int(item_index)-1
@@ -160,10 +200,11 @@ def shop(user_points, plant_health, plant_species):
 
     return plant_health, user_points
 
+
 to_do, plant_health, plant_species = welcome()
 if len(to_do) != 0:
     points_earned, tasks_completed, minutes_worked = do_tasks(to_do)
     if minutes_worked != None:
         user_points += points_earned
         plant_health, user_points = shop(user_points, plant_health, plant_species)
-    
+        
