@@ -48,14 +48,17 @@ def welcome():
     
     return to_do, plant_health, plant_species
 
-def countdown(seconds):
-    while seconds > 0:
-        mins, secs = divmod(seconds, 60)
-        timer = f"{mins:02d}:{secs:02d}"
-        st.title(timer, end="\r")
+def countdown(total_seconds):
+    countdown_placeholder = st.empty()
+
+    while total_seconds > 0:
+        mins, secs = divmod(total_seconds, 60)
+        timer_str = f"{mins:02d}:{secs:02d}"
+        countdown_placeholder.markdown(f"### ⏳ {timer_str}")
         time.sleep(1)
-        seconds -= 1
-    st.header("Time's up!")
+        total_seconds -= 1
+
+    countdown_placeholder.markdown("Time's up!")
 
 def do_tasks(to_do):
     minutes_worked, to_do, extra_tasks = points_and_task_completion(to_do)
@@ -66,51 +69,69 @@ def do_tasks(to_do):
     return points_earned, tasks_completed, minutes_worked
 
 def points_and_task_completion(task_list):
-    minutes_worked = 0
-    intervals_worked = 0
-    tasks_left = {}
-    points_earned = 0
+    if "task_index" not in st.session_state:
+        st.session_state.task_index = 0
+    if "waiting_extra" not in st.session_state:
+        st.session_state.waiting_extra = False
+    if "points_earned" not in st.session_state:
+        st.session_state.points_earned = 0
+    if "minutes_worked" not in st.session_state:
+        st.session_state.minutes_worked = 0
+    if "tasks_left" not in st.session_state:
+        st.session_state.tasks_left = {}
 
-    for i in range(len(task_list)):
+    i = st.session_state.task_index
 
-        # lets users take a 15 min break after working for 1 hr
-        if minutes_worked >= 60:
-            intervals_worked += 1
-            minutes_worked = 0
-            st.title("You've been working hard! Let's take a short break!")
-            countdown(15 * 60)
+    if i >= len(task_list):
+        st.success("All tasks processed! 🎉")
+        return st.session_state.minutes_worked, task_list, st.session_state.tasks_left
 
-        # saves task info as variables
-        task_name = task_list[i][0]
-        task_num = i+1
-        task_time = task_list[i][1]
-        task_points = task_list[i][2]
-    
-        st.title("Let's start Task " + str(task_num) + ": " + task_name + ". You have " + str(task_time) + " minutes for this task.")
-        st.write("Ready? GO!!")
-        countdown(task_time * 60)
+    task_name = task_list[i][0]
+    task_time = task_list[i][1]
+    task_points = task_list[i][2]
 
-        # gives users time to finish task, gives them extra 1/4 of original time if they need it, adds points based on productivity
-        finished = st.text_input("Are you finished with your task (yes/no)? ")
-        if finished == "no":
-            st.write("That's fine. Take a few more minutes. 🎗")
-            #countdown(task_time * 15)
-            finished = st.text_input("Finished (yes/no)? ")
-            if finished == "no":
-                to_do[i][2] = 0
-                st.write("Brush it off. Let's move on to the next task. 👍")
-                minutes_worked += task_time*1.25
-                tasks_left[i] = task_list[i]
-            elif finished == "yes":
-                st.header("AWESOME!! You earned " + str(task_points) + " points for completing this task! 😎")
-                points_earned += task_points
-                minutes_worked += task_time*1.25
-        elif finished == "yes":
-            st.header("AWESOME!! You earned " + str(task_points) + " points for completing this task! 😎 ")
-            points_earned += task_points
-            minutes_worked += task_time
-        minutes_worked = minutes_worked + intervals_worked*60
-        return minutes_worked, task_list, tasks_left
+    st.title(f"Task {i+1}: {task_name}")
+    st.write(f"You have {task_time} minutes.")
+
+    if st.button("GO!", key=f"go_{i}"):
+        countdown(task_time * 1)
+
+    finished = st.text_input("Are you finished with your task? (yes/no)", key=f"finished_{i}")
+
+    if finished == "no" and not st.session_state.waiting_extra:
+        st.write("That's fine. Take some more time.")
+        if st.button("Continue task", key=f"continue_{i}"):
+            countdown(task_time * 1)
+            st.session_state.waiting_extra = True
+
+    if st.session_state.waiting_extra:
+        finished_extra = st.text_input("Finished now? (yes/no)", key=f"finished_extra_{i}")
+        if finished_extra == "yes":
+            st.success(f"You earned {task_points/2} points!")
+            st.session_state.points_earned += task_points/2
+            st.session_state.minutes_worked += task_time * 1.25
+            st.session_state.waiting_extra = False
+            st.session_state.task_index += 1
+            st.rerun()
+        elif finished_extra == "no":
+            st.warning("Brush it off. No points earned.")
+            task_list[i][2] = 0
+            st.session_state.tasks_left[i] = task_list[i]
+            st.session_state.minutes_worked += task_time * 1.25
+            st.session_state.waiting_extra = False
+            st.session_state.task_index += 1
+            st.rerun()
+
+
+    elif finished == "yes":
+        st.success(f"You earned {task_points} points!")
+        st.session_state.points_earned += task_points
+        st.session_state.minutes_worked += task_time
+        st.session_state.task_index += 1
+        st.rerun()
+
+
+    return st.session_state.minutes_worked, task_list, st.session_state.tasks_left
 
 def shop(user_points, plant_health, plant_species, tasks_completed):
     plant_status = determine_plant_status(plant_health)
@@ -123,8 +144,8 @@ def shop(user_points, plant_health, plant_species, tasks_completed):
     st.write("Buy items with your productivity points to help your fruit grow.")
     for i in range(len(shop_items["items"])):
         st.write("Item #" + str(i+1) + ": " + shop_items["items"][i] + ". Cost: " + str(shop_items["costs"][i]) + ". Benefits : +" + str(shop_items["health_points"][i]) + " plant health points.")
-    st.header("How many items would you like to buy? ")
-    num_items = int(st.text_input(""))
+   
+    num_items = int(st.text_input("How many items would you like to buy?"))
     for i in range(num_items):
         item_index = int(st.text_input("What item number would you like to buy for your plant? "))-1
         item_cost = shop_items["costs"][item_index]
@@ -137,11 +158,8 @@ def shop(user_points, plant_health, plant_species, tasks_completed):
     return plant_health, user_points
 
 to_do, plant_health, plant_species = welcome()
-
-if len(to_do) != {}:
+if len(to_do) != 0:
     points_earned, tasks_completed, minutes_worked = do_tasks(to_do)
-
     if minutes_worked != 0:
         user_points += points_earned
-    
-        plant_health, user_points, minutes_worked = shop(user_points, plant_health, plant_species, tasks_completed)
+        plant_health, user_points = shop(user_points, plant_health, plant_species, tasks_completed)
