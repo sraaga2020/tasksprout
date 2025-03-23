@@ -137,14 +137,14 @@ def points_and_task_completion(task_list):
 
 
 
-def shop(user_points, plant_health, plant_species, tasks_completed):
+def shop(user_points, plant_health, plant_species):
     plant_status = determine_plant_status(plant_health)
-    shop_items = {"items":["Premium Fertilizer", "Normal Fertilizer", "Sun Lamp", "Growth Potion", "Water", "Pruning Tools", "A Little Love <3"], "costs":[200, 100, 200, 600, 80, 100, 10], "health_points": [20, 10, 20, 60, 8, 10, 1]}
+    shop_items = {"items":["premium fertilizer", "normal fertilizer", "sun lamp", "growth potion", "water", "pruning tools", "a little love"], "costs":[50, 25, 50, 150, 20, 25, 3], "health_points": [20, 10, 20, 60, 8, 10, 1]}
     st.title("Productivity Shop")
-    st.header("Buy items with your productivity points to help your fruit grow. 📈")
+    st.header("Buy items with your " + str(user_points) + " productivity points to help your fruit grow. 📈")
     for i in range(len(shop_items["items"])):
         st.markdown(
-            f"**Item #{i+1}**: {shop_items['items'][i]}. Cost: {shop_items['costs'][i]}. Benefits: +{shop_items['health_points'][i]} plant health points."
+            f"**Item #{i+1}**: {shop_items['items'][i]}.Cost: {shop_items['costs'][i]}. Benefits: +{shop_items['health_points'][i]} plant health points."
         )
     st.header("Checkout ")    
     item_index = st.text_input("What item number would you like to buy for your plant? ")
@@ -155,8 +155,9 @@ def shop(user_points, plant_health, plant_species, tasks_completed):
             user_points -= item_cost
             plant_health += shop_items["health_points"][item_index]
             plant_status = determine_plant_status(plant_health)
-            st.header("Purchase complete 💰! Your " + plant_species + " has grown to a " + plant_status + " ! ❤️")
+            st.header("Purchase complete 💰! Your " + plant_species + " has grown from a seed to a " + plant_status + " ! ❤️")
             st.title("Good work today! See you next time. 👋")
+
     return plant_health, user_points
 
 to_do, plant_health, plant_species = welcome()
@@ -164,4 +165,5 @@ if len(to_do) != 0:
     points_earned, tasks_completed, minutes_worked = do_tasks(to_do)
     if minutes_worked != None:
         user_points += points_earned
-        plant_health, user_points = shop(user_points, plant_health, plant_species, tasks_completed)
+        plant_health, user_points = shop(user_points, plant_health, plant_species)
+    
