@@ -141,14 +141,27 @@ def points_and_task_completion(task_list):
 
     if finished == "no" and not st.session_state.waiting_extra:
         st.write("That's fine. Take some more time.")
+                
+        if f"ai_help_clicked_{i}" not in st.session_state:
+            st.session_state[f"ai_help_clicked_{i}"] = False
+
         if st.button("Get AI help.", key=f"end_{i}"):
-            ai_message = query_huggingface("A student is struggling on this task and is taking a lot of time. Give a few short bullet point tips to help the student on this task: " + task_name)
-            st.info("Here's a few tips to get you through: " + ai_message)
-            countdown(task_time * 1)
-            st.session_state[f"show_finished_{i}"] = True
-        if st.button("Continue task", key=f"continue_{i}"):
-            countdown(task_time * 1)
-            st.session_state.waiting_extra = True
+            st.session_state[f"ai_help_clicked_{i}"] = True
+            st.rerun()
+
+        
+        if st.session_state.get(f"ai_help_clicked_{i}", False):
+            ai_prompt = st.text_input("What do you need help with?", key=f"ai_prompt_{i}")
+            if ai_prompt:
+                ai_message = query_huggingface(
+                    f"A student is struggling on this task: '{task_name}', and asks: '{ai_prompt}'. Give short helpful advice."
+                )
+                st.info("💡 Here's a few tips to get you through: " + ai_message)
+                st.session_state[f"show_finished_{i}"] = True
+
+                if st.button("Continue task", key=f"continue_{i}"):
+                    countdown(task_time * 1)
+                    st.session_state.waiting_extra = True
 
     if st.session_state.waiting_extra:
         finished_extra = st.text_input("Finished now? (yes/no)", key=f"finished_extra_{i}").strip().lower()
